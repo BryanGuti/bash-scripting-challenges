@@ -1,57 +1,60 @@
 #! /usr/bin/env bash
 
 check_directory() {
-  if [[ -d ${1} ]] then
-    echo ${1} && return
+  if [[ -d "${1}" ]]; then
+    echo "${1}"
+    return 0
   fi
 
-  if [[ ${#1} -eq 0 ]] then
-    echo "." && return
+  if [[ -z "${1}" ]]; then
+    echo "."
+    return 0
   fi
 
-  exit 1
+  return 1
 }
 
 sort_files() {
-  regular_file="^[A-Za-z0-9_-]+\.([A-Za-z0-9]+)$"
-  dot_file="^\.[^\.]+$"
+  local regular_file="^[^.*?!]+\.([^.*?!]+)$"
+  local dot_file="^\.[^.*?!]+$"
 
   for file in * .[^.]*; do
-    if [[ ! (-f ${file}) ]]; then continue; fi
+    if [[ ! -f "${file}" ]]; then continue; fi
 
-    echo ${file}
+    echo "Procession file: ${file}"
 
     if [[ ${file} =~ ${regular_file} ]]; then
-      if [[ ! (-d ${BASH_REMATCH[1]}) ]];then
-        mkdir ${BASH_REMATCH[1]}
+      local extension="${BASH_REMATCH[1]}"
+      if [[ ! -d ${extension} ]];then
+        mkdir "${extension}"
       fi
-      mv ${file} ${BASH_REMATCH[1]}
+      mv "${file}" "${extension}/"
     elif [[ ${file} =~ ${dot_file} ]]; then
-      if [[ ! (-d "dotfiles/") ]]; then
-        mkdir dotfiles/
+      if [[ ! -d "dotfiles" ]]; then
+        mkdir "dotfiles"
       fi
-      mv ${file} dotfiles/
+      mv "${file}" "dotfiles/"
     else
-      if [[ !(-d "no_extension/") ]]; then
-        mkdir no_extension/
+      if [[ ! -d "no_extension" ]]; then
+        mkdir "no_extension"
       fi
-      mv ${file} no_extension/
+      mv "${file}" "no_extension/"
     fi
   done
 }
 
 main() {
 
-  directory=$(check_directory ${1})
+  local directory
+  directory=$(check_directory "${1}")
 
-  if [[ ${?} -ne 0 ]] then
-    echo "${1} is not a directory"
-    exit 1
+  if [[ ${?} -ne 0 ]]; then
+    echo "Error: '${1}' is not a directory" >&2 && exit 1
   fi
 
-  cd ${directory}
+  cd "${directory}" || { echo "Error: Failed to change directory" >&2; exit 1; }
 
   sort_files
 }
 
-main ${1}
+main "${1}"
